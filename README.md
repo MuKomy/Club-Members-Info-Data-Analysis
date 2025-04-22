@@ -186,7 +186,7 @@ GROUP BY year
 ORDER BY year;
 ```
 
-
+![clean_year.png](Screenshots/clean_year.png)
 
 
 
