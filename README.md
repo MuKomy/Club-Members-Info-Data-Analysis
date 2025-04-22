@@ -13,7 +13,7 @@ A robust data cleaning pipeline implemented entirely in **PostgreSQL** that tran
 - [sql_script.sql](sql_script.sql) – SQL Script
 
 ## 🔍 Key Features
-- **100% PostgreSQL implementation** (no external tools)
+- **PostgreSQL implementation**
 - Multi-stage staging table strategy
 - Advanced string manipulation and pattern matching
 - Century correction for historical dates
@@ -54,7 +54,7 @@ UPDATE stage2 SET
 first_name = SPLIT_PART(full_name, ' ', 1),
 last_name = SUBSTRING(full_name FROM POSITION(' ' IN full_name)+1);
 ```
-
+![names.png](Screenshots/names.png) 
 
 ### 3. Address Parsing
 ``` sql
@@ -74,7 +74,7 @@ SET street = split_addr.street,
 city = split_addr.city,
 state = split_addr.state;
 ```
-
+![address.png](Screenshots/address.png) 
 ### 4. Temporal Data Correction
 ```sql
 -- Fix 2-digit years spanning centuries
@@ -91,7 +91,11 @@ ALTER TABLE stage4 ADD CONSTRAINT valid_dates
 CHECK (membership_date BETWEEN '1900-01-01' AND CURRENT_DATE);
 
 ```
+###  Raw Data Year Distribution 
+![old_year_distribution.png](Screenshots/old_year_distribution.png) 
 
+### Cleaned Year Distribution
+![clean_year.png](Screenshots/clean_year.png)
 
 ### 5. Deduplication Strategy
 ```sql
@@ -108,3 +112,81 @@ WHERE member_id IN (
 SELECT member_id FROM duplicates WHERE rn > 1
 );
 ```
+### 6. Job Title Standardization
+
+``` sql
+UPDATE cmi_staging3
+SET job_title = CASE
+WHEN array_length(string_to_array(trim(job_title), ' '), 1) > 1
+AND lower(split_part(job_title, ' ', array_length(string_to_array(trim(job_title), ' '), 1))) = 'i'
+THEN replace(lower(job_title), ' i', ', level 1')
+WHEN array_length(string_to_array(trim(job_title), ' '), 1) > 1 
+     AND lower(split_part(job_title, ' ', array_length(string_to_array(trim(job_title), ' '), 1))) = 'ii'
+THEN replace(lower(job_title), ' ii', ', level 2')
+
+WHEN array_length(string_to_array(trim(job_title), ' '), 1) > 1 
+     AND lower(split_part(job_title, ' ', array_length(string_to_array(trim(job_title), ' '), 1))) = 'iii'
+THEN replace(lower(job_title), ' iii', ', level 3')
+
+WHEN array_length(string_to_array(trim(job_title), ' '), 1) > 1 
+     AND lower(split_part(job_title, ' ', array_length(string_to_array(trim(job_title), ' '), 1))) = 'iv'
+THEN replace(lower(job_title), ' iv', ', level 4')
+
+ELSE trim(lower(job_title))
+```
+![titles.png](Screenshots/titles.png)
+
+## 📊 Data Analysis Queries (PostgreSQL)
+
+After cleaning, the following SQL queries were used to analyze the club members dataset and validate the results. These examples showcase typical exploratory and summary queries you can run on the cleaned data.
+
+---
+
+### 1. **Count Total Cleaned Records**
+``` sql
+SELECT COUNT(*) AS total_members
+FROM cmi_staging4;
+```
+
+
+### 2. **Distribution of Marital Status**
+
+```  sql
+SELECT martial_status, COUNT(*) AS count
+FROM cmi_staging3
+GROUP BY martial_status
+ORDER BY count DESC;
+```
+![martial_status.png](Screenshots/martial_status.png)
+
+### 3. **State Frequency and Outlier Detection**
+``` sql
+SELECT DISTINCT state, COUNT(*) AS count
+FROM cmi_staging4
+GROUP BY state
+ORDER BY count DESC;
+```
+![state_distribution.png](Screenshots/state_distribution.png)
+
+### 4. **Age Distribution**
+
+``` sql
+SELECT age, COUNT(*) AS count
+FROM cmi_staging4
+GROUP BY age
+ORDER BY age;
+```
+![age_distribution.png](Screenshots/age_distribution.png)
+### 5. **Membership Year Distribution**
+
+```sql
+SELECT EXTRACT(YEAR FROM membership_date) AS year, COUNT(*) AS count
+FROM cmi_staging4
+GROUP BY year
+ORDER BY year;
+```
+
+
+
+
+
