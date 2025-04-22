@@ -1,4 +1,4 @@
-# 🧹 Club Members Data Cleaning Project (PostgreSQL)
+# 🔍 Club Members Data Cleaning Project (PostgreSQL)
 
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16+-blue?logo=postgresql)
 ![Data Cleaning](https://img.shields.io/badge/Data_Cleaning-ETL-orange)
